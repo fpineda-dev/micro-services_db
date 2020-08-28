@@ -5,7 +5,7 @@ FROM golang:latest
 LABEL maintainer="Fran Pineda <pndafran@gmail.com>"
 
 # Set the Current Working Directory inside the container
-WORKDIR /product-db/pkg
+WORKDIR /product-db
 
 # Copy go mod and sum files
 COPY go.mod go.sum ./

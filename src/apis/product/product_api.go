@@ -1,9 +1,12 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"main.go/src/entities"
 
@@ -14,6 +17,11 @@ import (
 )
 
 func FindAll(response http.ResponseWriter, request *http.Request) {
+
+	//Manejar cierre una vez que se ejecuta la busqueda
+	ctx := context.Background()
+	cancelCtx, cancelFunc := context.WithCancel(ctx)
+
 	db, err := config.GetDB()
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
@@ -28,9 +36,19 @@ func FindAll(response http.ResponseWriter, request *http.Request) {
 			respondWithJson(response, http.StatusOK, products)
 		}
 	}
+
+	go task(cancelCtx)
+	time.Sleep(time.Second * 3)
+	cancelFunc()
+
 }
 
 func Search(response http.ResponseWriter, request *http.Request) {
+
+	//Manejar cierre una vez que se ejecuta la busqueda
+	ctx := context.Background()
+	cancelCtx, cancelFunc := context.WithCancel(ctx)
+
 	vars := mux.Vars(request)
 	Keyword := vars["keyword"]
 	db, err := config.GetDB()
@@ -47,9 +65,18 @@ func Search(response http.ResponseWriter, request *http.Request) {
 			respondWithJson(response, http.StatusOK, products)
 		}
 	}
+
+	go task(cancelCtx)
+	time.Sleep(time.Second * 3)
+	cancelFunc()
 }
 
 func SearchPrices(response http.ResponseWriter, request *http.Request) {
+
+	//Manejar cierre una vez que se ejecuta la busqueda
+	ctx := context.Background()
+	cancelCtx, cancelFunc := context.WithCancel(ctx)
+
 	vars := mux.Vars(request)
 	smin := vars["min"]
 	smax := vars["max"]
@@ -69,9 +96,17 @@ func SearchPrices(response http.ResponseWriter, request *http.Request) {
 			respondWithJson(response, http.StatusOK, products)
 		}
 	}
+
+	go task(cancelCtx)
+	time.Sleep(time.Second * 3)
+	cancelFunc()
 }
 
 func Create(response http.ResponseWriter, request *http.Request) {
+	//Manejar cierre una vez que se ejecuta la busqueda
+	ctx := context.Background()
+	cancelCtx, cancelFunc := context.WithCancel(ctx)
+
 	var product entities.Product
 	err := json.NewDecoder(request.Body).Decode(&product)
 
@@ -89,6 +124,10 @@ func Create(response http.ResponseWriter, request *http.Request) {
 			respondWithJson(response, http.StatusOK, product)
 		}
 	}
+
+	go task(cancelCtx)
+	time.Sleep(time.Second * 3)
+	cancelFunc()
 }
 
 func Update(response http.ResponseWriter, request *http.Request) {
@@ -143,4 +182,21 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+/*Funcion para manejar los tiempos de cancelacion*/
+func task(ctx context.Context) {
+	i := 1
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("Gracefully exit")
+			fmt.Println(ctx.Err())
+			return
+		default:
+			fmt.Println(i)
+			time.Sleep(time.Second * 1)
+			i++
+		}
+	}
 }
